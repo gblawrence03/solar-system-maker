@@ -3,13 +3,11 @@ from math import ceil
 pygame.init()
 
 def init(surface, arrayListeners):
-    global screenSurface
-    screenSurface = surface
-    global uiListeners
-    uiListeners = arrayListeners
+    element.screenSurface = surface
+    element.uiListeners = arrayListeners
 
 def hideAll():
-    for i in uiListeners:
+    for i in element.uiListeners:
         i.hide()
 
 defaultColour = (255, 255, 255)
@@ -17,14 +15,15 @@ defaultInputColour = (64, 64, 64)
 defaultFont = "courier"
 defaultTextSize = 18
 defaultTextColour = (255, 255, 255)
+#keys that should be ignored by input boxes
 specialKeys = [pygame.K_RETURN, pygame.K_TAB, pygame.K_ESCAPE]
 
 class element():
     def __init__(self, xpos, ypos, text, font, width, height, event, window, textColour, textBold, textItalics, drawPriority):
         if drawPriority == "Low":
-            uiListeners.append(self)
+            self.uiListeners.append(self)
         elif drawPriority == "High":
-            uiListeners.insert(0, self)
+            self.uiListeners.insert(0, self)
         self.xpos = xpos
         self.ypos = ypos
         self.width = width
@@ -44,7 +43,6 @@ class element():
             self.ypos += self.window.ypos
             self.window.add(self)
 
-
     def show(self):
         self.showing = True
 
@@ -52,13 +50,13 @@ class element():
         self.showing = False
 
 class actionButton(element):
-    #constructor
     def __init__(self, font = defaultFont, xpos = 0, ypos = 0, width = None, height = None, colour = defaultColour, text = "Button", 
                 textSize = defaultTextSize, outline = 1, xMargin = 0, yMargin = 0, action = None, window = None, 
                 textColour = defaultTextColour, textBold = False, textItalics = False, ID = False, xAlign = "centre", yAlign = "centre", drawPriority = "Low"):
         super().__init__(xpos, ypos, text, font, width, height, self.detectClick, window, textColour, textBold, textItalics, drawPriority)
         self.id = ID
         self.action = action
+        # this is for tables - "select" buttons in tables must return their ID 
         if self.action == "getID":
             self.action = self.getID
         self.event = self.detectClick
@@ -100,11 +98,10 @@ class actionButton(element):
     #draw function called every frame
     def draw(self):
         if self.showing:
-            global screenSurface
             #self.textRect.center = self.buttonRect.center
             #self.buttonRect.center = (self.xpos, self.ypos)
-            screenSurface.blit(self.textSurface, self.textRect)
-            pygame.draw.rect(screenSurface, self.colour, self.buttonRect, self.outline)
+            self.screenSurface.blit(self.textSurface, self.textRect)
+            pygame.draw.rect(self.screenSurface, self.colour, self.buttonRect, self.outline)
 
     #event function called every frame
     def detectClick(self, event):
@@ -148,11 +145,10 @@ class toggleButton(element):
     #draw function called every frame
     def draw(self):
         if self.showing:
-            global screenSurface
             self.buttonRect.center = (self.xpos, self.ypos)
             self.textRect.center = self.buttonRect.center
-            screenSurface.blit(self.textSurface, self.textRect)
-            pygame.draw.rect(screenSurface, self.colour, self.buttonRect, self.outline)
+            self.screenSurface.blit(self.textSurface, self.textRect)
+            pygame.draw.rect(self.screenSurface, self.colour, self.buttonRect, self.outline)
 
     #event function called every frame
     def detectClick(self, event):
@@ -194,8 +190,8 @@ class label(element):
     #draw method
     def draw(self):
         if self.showing:
-            global screenSurface
-            screenSurface.blit(self.textSurface, self.textRect)
+            
+            self.screenSurface.blit(self.textSurface, self.textRect)
 
     def setText(self, text):
         self.text = text
@@ -235,8 +231,7 @@ class multiLinelabel(element):
     #draw method
     def draw(self):
         if self.showing:
-            global screenSurface
-            screenSurface.blit(self.drawSurface, self.textRect)
+            self.screenSurface.blit(self.drawSurface, self.textRect)
 
     def setText(self, text):
         self.text = text
@@ -315,7 +310,6 @@ class inputBox(element):
     def draw(self):
         place = 0
         if self.showing:
-            global screenSurface
             if self.active:
                 self.text = self.inputText
                 if self.asterisks: # if its obfuscated, replace the text with asterisks
@@ -347,11 +341,11 @@ class inputBox(element):
                 self.textRect.topleft = (self.xpos - self.width / 2, self.ypos - self.boxRect.h / 2)
                 self.displayText = self.text
             self.textSurface = self.fontObject.render(self.displayText, True, self.textColour)
-            screenSurface.blit(self.textSurface, self.textRect)
+            self.screenSurface.blit(self.textSurface, self.textRect)
             if self.active:
-                pygame.draw.rect(screenSurface, self.activeColour, self.boxRect, self.outline)
+                pygame.draw.rect(self.screenSurface, self.activeColour, self.boxRect, self.outline)
             else:
-                pygame.draw.rect(screenSurface, self.inactiveColour, self.boxRect, self.outline)
+                pygame.draw.rect(self.screenSurface, self.inactiveColour, self.boxRect, self.outline)
 
 
     def update(self, event):
@@ -522,7 +516,7 @@ class table(element):
             self.boxRect = pygame.Rect(self.xpos, self.ypos, self.width, self.height)
             #draw lines separating the rows
             for line in range(self.rowsPerPage + 2):
-                pygame.draw.line(screenSurface, (255, 255, 255), (self.xpos, self.ypos + self.heightPerCell * (line)), 
+                pygame.draw.line(self.screenSurface, (255, 255, 255), (self.xpos, self.ypos + self.heightPerCell * (line)), 
                                  (self.xpos + self.width, self.ypos + self.heightPerCell * (line)))
 
 
@@ -545,11 +539,10 @@ class window(element):
         if self.showing:
             self.WindowRect = pygame.Rect(self.xpos, self.ypos, self.width, self.height)
             self.OutlineRect = pygame.Rect(self.xpos, self.ypos, self.width + self.outlineWidth / 2, self.height + self.outlineWidth / 2)
-            global screenSurface
             self.textRect.center = self.WindowRect.center
-            screenSurface.blit(self.textSurface, self.textRect)
-            pygame.draw.rect(screenSurface, self.colour, self.WindowRect)
-            pygame.draw.rect(screenSurface, self.outlineColour, self.OutlineRect, self.outlineWidth)
+            self.screenSurface.blit(self.textSurface, self.textRect)
+            pygame.draw.rect(self.screenSurface, self.colour, self.WindowRect)
+            pygame.draw.rect(self.screenSurface, self.outlineColour, self.OutlineRect, self.outlineWidth)
 
     #function used by elements to add themselves to the window
     def add(self, obj):
@@ -613,8 +606,7 @@ class slider(element):
 
     def draw(self):
         if self.showing:
-            global screenSurface
-            screenSurface.blit(self.drawSurface, (self.xpos, self.ypos))
-            screenSurface.blit(self.drawButtonSurface, (self.buttonXpos, self.ypos))
+            self.screenSurface.blit(self.drawSurface, (self.xpos, self.ypos))
+            self.screenSurface.blit(self.drawButtonSurface, (self.buttonXpos, self.ypos))
 
     

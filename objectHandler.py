@@ -3,26 +3,19 @@ import math
 pygame.init()
 
 def init(surface, arrayListeners, event):
-    global screenSurface
-    screenSurface = surface
-    global objectListeners
-    objectListeners = arrayListeners
-    global gConst 
-    gConst = 6.674 * 10 ** -11
-    global eventClicked
-    eventClicked = event
+    systemObject.screenSurface = surface
+    systemObject.objectListeners = arrayListeners
+    systemObject.gConst = 6.674 * 10 ** -11
+    systemObject.eventClicked = event
 
 def updateScreen(screenConv, screenOffX, screenOffY):
-    global screenConversion
-    screenConversion = screenConv
-    global screenOffsetX
-    screenOffsetX = screenOffX
-    global screenOffsetY
-    screenOffsetY = screenOffY
+    systemObject.screenConversion = screenConv
+    systemObject.screenOffsetX = screenOffX
+    systemObject.screenOffsetY = screenOffY
 
 class systemObject():
     def __init__(self, data):
-        objectListeners.append(self)
+        self.objectListeners.append(self)
         self.data = data
         self.objectID = data[0]
         self.solarSystemID = data[1]
@@ -45,7 +38,7 @@ class systemObject():
         self.event = self.detectClick
 
     def init(self):
-        for i in objectListeners:
+        for i in self.objectListeners:
             if i.solarSystemObjectID == self.parentID:
                 self.parent = i
         if self.parent.solarSystemObjectID == 0:
@@ -69,12 +62,12 @@ class systemObject():
         return self.data
 
     def convertCoords(self):
-        self.screen_x = (self.x_pos + screenOffsetX) / screenConversion
-        self.screen_y = (self.y_pos + screenOffsetY) / screenConversion
+        self.screen_x = (self.x_pos + self.screenOffsetX) / self.screenConversion
+        self.screen_y = (self.y_pos + self.screenOffsetY) / self.screenConversion
 
     def draw(self):
         self.rect.center = (self.screen_x, self.screen_y)
-        screenSurface.blit(self.image, self.rect)
+        self.screenSurface.blit(self.image, self.rect)
 
     def setColour(self, r, g, b):
         #update colour variables
@@ -94,8 +87,8 @@ class systemObject():
             #get distance to parent
             distance = math.sqrt((self.x_pos - self.parent.x_pos) ** 2 + (self.y_pos - self.parent.y_pos) ** 2)
             #calculate acceleration 
-            self.x_acc = gConst * self.parent.mass * (self.parent.x_pos - self.x_pos) / distance ** 3
-            self.y_acc = gConst * self.parent.mass * (self.parent.y_pos - self.y_pos) / distance ** 3
+            self.x_acc = self.gConst * self.parent.mass * (self.parent.x_pos - self.x_pos) / distance ** 3
+            self.y_acc = self.gConst * self.parent.mass * (self.parent.y_pos - self.y_pos) / distance ** 3
             self.x_acc += self.parent.x_acc
             self.y_acc += self.parent.y_acc
             #calcaulte new velocities
@@ -110,7 +103,7 @@ class systemObject():
         else:
             self.parent = self
         
-    def print_data(self):
+    def debug(self):
         print("MY ID:", self.solarSystemObjectID)
         print("-----")
         print("X ACCELERATION:", self.x_acc, "m/s^2 x")
@@ -125,5 +118,5 @@ class systemObject():
     def detectClick(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.rect.collidepoint(event.pos):
-                eventClicked(self)
+                self.eventClicked()
 

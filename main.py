@@ -1,4 +1,4 @@
-import databaseHandler as db
+import databaseHandler
 import hashlib
 import datetime
 import objectHandler as ob
@@ -10,32 +10,35 @@ import sys
 
 import math
 
-version = "Alpha v1.3"
+version = "Alpha v1.0.0"
 
-global menuStage
-menuStages = []
-
-userID = 0
-objectCount = 0
-
-gConst = 6.674 * 10 ** -11
-
-global velocityMultiplier
-velocityMultiplier = 200
-
-simulation = False
-choosingNewObjectVelocity = False
-objectPlaceMode = 0
-
-global objectData
-objectData = []
-
-planetLabels = []
-
-selectedObject = None
-
-global solarSystemID
-solarSystemID = 0
+class data():
+    userID = 0
+    menuStages = []
+    gConst = 6.674 * 10 ** -11
+    velocityMultiplier = 200
+    simulation = False
+    choosingNewObjectVelocity = False
+    objectPlaceMode = 0
+    objectData = []
+    objectCount = 0
+    planetLabels = []
+    selectedObject = None
+    solarSystemID = 0
+    creatingNewPlanet = False
+    systemObjects = []
+    simulationSpeed = 0
+    systemSize = 1000000000000
+    screenConversion = 0
+    screenOffsetX = 0
+    screenOffsetY = 0
+    currentAction = None
+    currentLesson = None
+    lessonID = 0
+    lessonStage = 0
+    tickClock = None
+    timeSinceLastTick = 0
+    ghost_planet = None
 
 class ghostPlanet():
     def __init__(self, radius, colour):
@@ -48,14 +51,14 @@ class ghostPlanet():
 
     def update(self):
         #get the coordinates of the planet
-        if objectPlaceMode == 0 or choosingNewObjectVelocity == False:
+        if data.objectPlaceMode == 0 or data.choosingNewObjectVelocity == False:
             self.xpos = pygame.mouse.get_pos()[0]
             self.ypos = pygame.mouse.get_pos()[1]
 
         #convert the coordinates of the mouse into system coordinates
 
-        systemX = self.xpos * screenConversion - screenOffsetX
-        systemY = self.ypos * screenConversion - screenOffsetY
+        systemX = self.xpos * data.screenConversion - data.screenOffsetX
+        systemY = self.ypos * data.screenConversion - data.screenOffsetY
         
         #update the distance label
         parentDistance = math.sqrt((systemX - self.parent.x_pos)**2 + (systemY - self.parent.y_pos)**2)
@@ -64,9 +67,9 @@ class ghostPlanet():
         labelObjectDistance.ypos = (self.ypos + self.parent.screen_y) / 2
 
         #getting the velocity of the new object
-        if choosingNewObjectVelocity:
-            xvel = (pygame.mouse.get_pos()[0] - self.xpos) * velocityMultiplier
-            yvel = (pygame.mouse.get_pos()[1] - self.ypos) * velocityMultiplier
+        if data.choosingNewObjectVelocity:
+            xvel = (pygame.mouse.get_pos()[0] - self.xpos) * data.velocityMultiplier
+            yvel = (pygame.mouse.get_pos()[1] - self.ypos) * data.velocityMultiplier
             vel = math.sqrt(xvel**2 + yvel**2)
             #updating the velocity label
             labelObjectVelocity.setText("Velocity: " + f"{round(vel / 1000):,d}" + " km/s")
@@ -79,7 +82,7 @@ class ghostPlanet():
         for obj in listener.objectListeners:
             distanceSquared = (systemX - obj.x_pos) ** 2 + (systemY - obj.y_pos) ** 2
             if distanceSquared != 0:
-                force = gConst * obj.mass / (distanceSquared)
+                force = data.gConst * obj.mass / (distanceSquared)
                 value = force / (distanceSquared)
                 if closest == None:
                     closest = value
@@ -99,7 +102,7 @@ class ghostPlanet():
         #draw line from parent to position
         pygame.draw.aaline(SCREEN, self.colour, (self.xpos, self.ypos), (int(self.parent.screen_x), int(self.parent.screen_y)))
         #draw velocity line if needed
-        if objectPlaceMode == 1 and choosingNewObjectVelocity:
+        if data.objectPlaceMode == 1 and data.choosingNewObjectVelocity:
             pygame.draw.aaline(SCREEN, (255, 255, 255), (self.xpos, self.ypos), pygame.mouse.get_pos())
 
 def registerAccount(username, password1, password2):
@@ -125,7 +128,6 @@ def registerAccount(username, password1, password2):
         return 3
 
 def login(username, password):
-    global userID
     if username == False:
         return 8
     if password == False:
@@ -138,28 +140,27 @@ def login(username, password):
         return 5 #if none exist return 5
     else:
         if str(accounts[0][2]) == str(password):
-            userID = accounts[0][0]
+            data.userID = accounts[0][0]
             return 0 #if the password is correct, login
         else:
             return 6 #otherwise return 6
 
 def createSolarSystem(name):
-    global systemObjects
-    systemObjects = []
+    data.systemObjects = []
     date = datetime.date.today().strftime("%d-%b-%y").upper()
-    objectCount = 1
-    db.insertSolarSystem(name, date, objectCount, userID)
+    data.objectCount = 1
+    db.insertSolarSystem(name, date, data.objectCount, data.userID)
 
 def loadSolarSystemList():
-    choices = db.getUserSolarSystems(userID)
+    choices = db.getUserSolarSystems(data.userID)
     return choices 
 
 #creates all the instances of systemObject 
-def createSystemObjects(objectData):
-    systemObjects = []
-    for i in objectData:
-        systemObjects.append(ob.systemObject(i))
-    listener.setObjects(systemObjects)
+def createSystemObjects():
+    data.systemObjects = []
+    for i in data.objectData:
+        data.systemObjects.append(ob.systemObject(i))
+    listener.setObjects(data.systemObjects)
     for i in listener.objectListeners:
         i.init()
 
@@ -180,7 +181,6 @@ def quitClicked():
 
 #when the register button on the main menu is clicked
 def registerClicked():
-    global menuStages
     ui.hideAll()
     buttonBack.show()
     labelTitle.show()
@@ -189,12 +189,11 @@ def registerClicked():
     inputRegisterPassword1.show()
     inputRegisterPassword2.show()
     buttonCreateAccount.show()
-    menuStages.append("Register")
+    data.menuStages.append("Register")
     #show input boxes and buttons
 
 #when the login button on the main menu is clicked
 def loginClicked():
-    global menuStages
     ui.hideAll()
     buttonBack.show()
     labelTitle.show()
@@ -202,24 +201,23 @@ def loginClicked():
     inputLoginUsername.show()
     inputLoginPassword.show()
     buttonLoginAccount.show()
-    menuStages.append("Login")
+    data.menuStages.append("Login")
     #show input boxes and buttons
 
 #when the guest button on the main menu is clicked
 def guestClicked():
     ui.hideAll()
-    global userID #set the userID to 1 (guest ID)
-    userID = 1
+    # guest ID is 1
+    data.userID = 1
     createOrLoad()
     #show input boxes and buttons
 
 def backClicked():
-    global menuStages
     #we must pop twice - once to remove the
     #stage the user is leaving, and once to
     #remove the stage that will be readded
-    menuStages.pop()
-    newStage = menuStages.pop()
+    data.menuStages.pop()
+    newStage = data.menuStages.pop()
     if newStage == "MainMenu":
         mainMenu()
     elif newStage == "Login":
@@ -231,14 +229,13 @@ def backClicked():
 
 def createOrLoad():
     #setting up the create or load screen 
-    global menuStages
     ui.hideAll()
     buttonBack.show()
     labelTitle.show()
     buttonCreate.show()
     buttonLoad.show()
     labelTitle.setText("Create or load a solar system?")
-    menuStages.append("CreateOrLoad")
+    data.menuStages.append("CreateOrLoad")
 
 def createAccountClicked():
     #get the input from the boxes
@@ -284,14 +281,13 @@ def loginAccountClicked():
 
 #when the Load button on the load / create screen is clicked
 def loadClicked():
-    global menuStages
     #update the UI 
     ui.hideAll()
     buttonBack.show()
     labelTitle.show()
     labelTitle.setText("Pick a solar system to load.")
     #get the solar systems that the user has access to
-    solarSystems = db.getUserSolarSystems(userID)
+    solarSystems = db.getUserSolarSystems(data.userID)
     #creating the array to be passed into the table
     solarSystemsFormat = [["Name", "Objects", "Last saved"]]
     #format: name, objectCount, date, solarsystemID
@@ -304,52 +300,44 @@ def loadClicked():
                          buttonText = "Load", action = onLoadTableResult)
     loadTable.show()
     #finally, we update the menuStages 
-    menuStages.append("Load")
+    data.menuStages.append("Load")
 
 def createClicked():
-    global menuStages
-    global userID
     ui.hideAll()
     buttonBack.show()
     labelTitle.show()
     buttonCreateSystem.show()
-    if userID != 1: #if the user is not a guest, allow them to pick a name
+    if data.userID != 1: #if the user is not a guest, allow them to pick a name
         inputSystemName.show()
         labelTitle.setText("Choose the name")
     else:   #otherwise, don't allow them to pick a name
         labelRegisterError.setText("Warning: You are logged in as a Guest. Your solar system will not be saved.")
         labelRegisterError.show()
         labelTitle.setText("Guest create")
-    menuStages.append("Create")
+    data.menuStages.append("Create")
 
 def createSystemClicked():
-    global solarSystemID
-    global menuStages
-    global objectData
     #hide the user interface
     ui.hideAll()
     #create objectData for guests 
-    objectData = []
-    objectData.append([0, solarSystemID, 0, 0, "Sun", 0, 0, 0, 0, 1.989 * (10 ** 30), 255, 255, 0])
-    if userID != 1:
+    data.objectData = []
+    data.objectData.append([0, data.solarSystemID, 0, 0, "Sun", 0, 0, 0, 0, 1.989 * (10 ** 30), 255, 255, 0])
+    if data.userID != 1:
         #if the user is not a guest, we upload the new solar system to the database, with the name
         createSolarSystem(inputSystemName.getInput())
         #to get the ID of the new solar system, we call getNewSolarSystem
         solarSystemID = db.getNewSolarSystem()
-        solarSystemID = int(solarSystemID[0][0])
+        data.solarSystemID = int(solarSystemID[0][0])
         #we create objectData and add the default star 
-        objectData = []
-        objectData.append([0, solarSystemID, 0, 0, "Sun", 0, 0, 0, 0, 1.989 * (10 ** 30), 255, 255, 0])
+        data.objectData = []
+        data.objectData.append([0, data.solarSystemID, 0, 0, "Sun", 0, 0, 0, 0, 1.989 * (10 ** 30), 255, 255, 0])
         #then we update the database with the new objectData
-        db.updateObjectsDatabase(objectData)
-    objectCount = 1
-    global systemSize
-    systemSize = 1000000000000
-    #finally, we call simulationSetup
+        db.updateObjectsDatabase(data.objectData)
+    data.objectCount = 1
+    data.systemSize = 1000000000000
     simulationSetup()
 
 def mainMenu():
-    global menuStages
     ui.hideAll()
     buttonQuit.show()
     buttonRegister.show()
@@ -357,45 +345,34 @@ def mainMenu():
     buttonGuest.show()
     labelTitle.show()
     labelTitle.setText("SolarSystemMaker")
-    menuStages.append("MainMenu")
+    data.menuStages.append("MainMenu")
 
 def onLoadTableResult(ID):
-    global solarSystemID
-    global menuStages
-    global objectData
-    global objectCount
-    solarSystemID = ID
+    data.solarSystemID = ID
     ui.hideAll()
-    objectData = []
+    data.objectData = []
     #getting the solar system information from the database
-    solarSystem = db.getSolarSystem(solarSystemID)
-    objectCount = solarSystem[0][3]
-    global systemSize
-    systemSize = 1000000000000
-    objectData = db.loadObjects(solarSystemID)
+    solarSystem = db.getSolarSystem(data.solarSystemID)
+    data.objectCount = solarSystem[0][3]
+    data.systemSize = 1000000000000
+    data.objectData = db.loadObjects(data.solarSystemID)
     #running simulationSetup to complete the rest of setup
     simulationSetup()
 
 def simulationSetup():
-    global simulation
-    global screenConversion
-    global screenOffsetX
-    global screenOffsetY
-    global objectData
-
     #calculates the scale multiplier
-    screenConversion = systemSize / WIDTH 
+    data.screenConversion = data.systemSize / WIDTH 
     #calculates the offset values (as the star is at 
     #the center but 0,0 on the screen is top left)
-    screenOffsetX = systemSize / 2
-    screenOffsetY = (systemSize / 2) * (HEIGHT / WIDTH)
-    ob.updateScreen(screenConversion, screenOffsetX, screenOffsetY)
+    data.screenOffsetX = data.systemSize / 2
+    data.screenOffsetY = (data.systemSize / 2) * (HEIGHT / WIDTH)
+    ob.updateScreen(data.screenConversion, data.screenOffsetX, data.screenOffsetY)
 
     #load the objects from the database and create the systemObjects
     #if userID != 1:
      #   objectData = db.loadObjects(solarSystemID)
-    createSystemObjects(objectData)
-    simulation = True
+    createSystemObjects()
+    data.simulation = True
 
     ## Here we will update the user interface with all the relevant elements
     buttonTogglePlaceMode.show()
@@ -410,14 +387,12 @@ def simulationSetup():
     ## Planet labels will also be set up here
 
     #begin the tickClock in preparation for simulation
-    tickClock.tick()
-    global timeSinceLastTick
-    timeSinceLastTick = 0
+    data.tickClock.tick()
+    data.timeSinceLastTick = 0
 
-    global ghost_planet
-    ghost_planet = ghostPlanet(10, (128, 128, 128))
+    data.ghost_planet = ghostPlanet(10, (128, 128, 128))
 
-    if userID != 1:
+    if data.userID != 1:
         buttonSimulationSave.show()
 
     buttonLessons.show()
@@ -427,31 +402,29 @@ def simulationSetup():
 '''
 
     #fixes a crash caused when reloading solar sysems
-    planetLabels.clear()
+    data.planetLabels.clear()
 
     for i in listener.objectListeners:
-        planetLabels.append(ui.label(text = i.name, textBold = True, xAlign="left", yAlign="bottom", drawPriority="High"))
-    for i in planetLabels:
+        data.planetLabels.append(ui.label(text = i.name, textBold = True, xAlign="left", yAlign="bottom", drawPriority="High"))
+    for i in data.planetLabels:
         i.show()
 
 def simulationSaveSetup():
-    objectData = db.loadObjects(solarSystemID)
-    createSystemObjects(objectData)
-    simulation = True
-    tickClock.tick()
-    global timeSinceLastTick
-    timeSinceLastTick = 0
+    data.objectData = db.loadObjects(data.solarSystemID)
+    createSystemObjects()
+    data.simulation = True
+    data.tickClock.tick()
+    data.timeSinceLastTick = 0
 
 def simulationSaveClicked():
     labelUpdates.setText("Saving...")
     labelUpdates.show()
     labelUpdates.draw()
     pygame.display.update()
-    db.updateObjectsDatabase(createObjectData())
-    db.updateSolarSystem(datetime.date.today().strftime("%d-%b-%y").upper(), objectCount, solarSystemID)
-    global timeSinceLastTick
-    global tickClock
-    objectData = []
+    data.objectData = createObjectData()
+    db.updateObjectsDatabase(data.objectData)
+    db.updateSolarSystem(datetime.date.today().strftime("%d-%b-%y").upper(), data.objectCount, data.solarSystemID)
+    data.objectData = []
     labelUpdates.hide()
     simulationSaveSetup()
     pygame.display.update()
@@ -461,95 +434,69 @@ def simulationExitClicked():
 
 #function to run when the user confirms to exit
 def simulationExitConfirmed():
-    global menuStages
-    global simulation
-    global objectCount
-    global objectData
-    global solarSystemID
-    global listener
-    global creatingNewPlanet
     #return to the create or load screen
-    while menuStages[len(menuStages) - 1] != "CreateOrLoad":
-        menuStages.pop()
-    menuStages.pop()
+    while data.menuStages[len(data.menuStages) - 1] != "CreateOrLoad":
+        data.menuStages.pop()
+    data.menuStages.pop()
     createOrLoad()
     #reset variables
-    simulation = False
-    solarSystemID = 0
-    objectData = []
+    data.simulation = False
+    data.solarSystemID = 0
+    data.objectData = []
     listener.objectListeners = []
-    objectCount = 0
-    creatingNewPlanet = False
+    data.objectCount = 0
+    data.creatingNewPlanet = False
 
 def simulationExitCancelled():
     windowSimulationExit.hide()
 
 #function to update place mode when toggleButton clicked
 def togglePlaceModeClicked():
-    global objectPlaceMode
-    if objectPlaceMode == 0:
-        objectPlaceMode = 1
-    elif objectPlaceMode == 1:
-        objectPlaceMode = 0
-    print(objectPlaceMode)
+    if data.objectPlaceMode == 0:
+        data.objectPlaceMode = 1
+    elif data.objectPlaceMode == 1:
+        data.objectPlaceMode = 0
 
 #when the new planet button is clicked, begin creating a new planet 
 #if not already
 def newPlanetClicked():
-    global creatingNewPlanet
-    if creatingNewPlanet == False:
-        creatingNewPlanet = True
+    if data.creatingNewPlanet == False:
+        data.creatingNewPlanet = True
         labelObjectDistance.show()
     
 def createNewPlanetCustom():
-    global creatingNewPlanet
-    global screenConversion
-    global screenOffsetX
-    global screenOffsetY
-    global objectPlaceMode
-    global objectCount
-    global choosingNewObjectVelocity
     #get the parent, position and velocity from the ghost planet. 
-    parent = ghost_planet.parent
-    xpos = ghost_planet.xpos
-    ypos = ghost_planet.ypos
-    xvel = (pygame.mouse.get_pos()[0] - xpos) * velocityMultiplier
-    yvel = (pygame.mouse.get_pos()[1] - ypos) * velocityMultiplier
-    xpos = xpos * screenConversion - screenOffsetX
-    ypos = ypos * screenConversion - screenOffsetY
-    objectCount += 1
+    parent = data.ghost_planet.parent
+    xpos = data.ghost_planet.xpos
+    ypos = data.ghost_planet.ypos
+    xvel = (pygame.mouse.get_pos()[0] - xpos) * data.velocityMultiplier
+    yvel = (pygame.mouse.get_pos()[1] - ypos) * data.velocityMultiplier
+    xpos = xpos * data.screenConversion - data.screenOffsetX
+    ypos = ypos * data.screenConversion - data.screenOffsetY
+    data.objectCount += 1
     #register as listener 
-    listener.objectListeners.append(ob.systemObject([0, solarSystemID, parent.solarSystemObjectID, 
-                                                    objectCount, "Planet " + str(objectCount), xpos, 
+    listener.objectListeners.append(ob.systemObject([0, data.solarSystemID, parent.solarSystemObjectID, 
+                                                    data.objectCount, "Planet " + str(data.objectCount), xpos, 
                                                     ypos, xvel, yvel, 1.89 * 10 ** 24, 230, 130, 130]))
     i=listener.objectListeners[len(listener.objectListeners)-1]
     i.init()
     #reset variables, hide label
-    creatingNewPlanet = False
-    choosingNewObjectVelocity = False
+    data.creatingNewPlanet = False
+    data.choosingNewObjectVelocity = False
     labelObjectDistance.hide()
-
-
     labelObjectVelocity.hide()
 
-    planetLabels.append(ui.label(text = i.name, textBold = True, xAlign="left", yAlign="bottom", drawPriority="High"))
-    planetLabels[len(planetLabels)-1].show()
+    data.planetLabels.append(ui.label(text = i.name, textBold = True, xAlign="left", yAlign="bottom", drawPriority="High"))
+    data.planetLabels[len(data.planetLabels)-1].show()
 
 def createNewPlanetQuick():
-    global creatingNewPlanet
-    global screenConversion
-    global screenOffsetX
-    global screenOffsetY
-    global objectPlaceMode
-    global objectCount
-
-    parent = ghost_planet.parent #get the ghost planet
+    parent = data.ghost_planet.parent #get the ghost planet
     #get planet coordinates by converting mouse coordinates
-    xpos = pygame.mouse.get_pos()[0] * screenConversion - screenOffsetX
-    ypos = pygame.mouse.get_pos()[1] * screenConversion - screenOffsetY
+    xpos = pygame.mouse.get_pos()[0] * data.screenConversion - data.screenOffsetX
+    ypos = pygame.mouse.get_pos()[1] * data.screenConversion - data.screenOffsetY
 
     #calculate velocities needed for circular orbit
-    vel = math.sqrt(gConst * parent.mass / math.sqrt((xpos - parent.x_pos)**2 + (ypos - parent.y_pos)**2))
+    vel = math.sqrt(data.gConst * parent.mass / math.sqrt((xpos - parent.x_pos)**2 + (ypos - parent.y_pos)**2))
     xvelRelative = 1 / (math.sqrt(1 + ((xpos - parent.x_pos) / (ypos - parent.y_pos))**2)) * vel
     yvelRelative = (xpos - parent.x_pos) / (ypos - parent.y_pos) / (math.sqrt(1 + ((xpos - parent.x_pos) / (ypos - parent.y_pos))**2)) * vel
     #adjust velocities depending on quadrant
@@ -562,88 +509,81 @@ def createNewPlanetQuick():
     yvel = yvelRelative + parent.y_vel
 
     #create new object
-    objectCount += 1
-    listener.objectListeners.append(ob.systemObject([0, solarSystemID, parent.solarSystemObjectID, 
-                                                    objectCount, "Planet " + str(objectCount), xpos, ypos, 
+    data.objectCount += 1
+    listener.objectListeners.append(ob.systemObject([0, data.solarSystemID, parent.solarSystemObjectID, 
+                                                    data.objectCount, "Planet " + str(data.objectCount), xpos, ypos, 
                                                     xvel, yvel, 1.89 * 10 ** 24, 230, 130, 130]))
     i=listener.objectListeners[len(listener.objectListeners)-1]
     i.init()
 
     #object has been created so this variable can now be reset
-    creatingNewPlanet = False
+    data.creatingNewPlanet = False
 
     #here we will also create the label for the new object
-    planetLabels.append(ui.label(text = i.name, textBold = True, xAlign="left", yAlign="bottom", drawPriority="High"))
-    planetLabels[len(planetLabels)-1].show()
+    data.planetLabels.append(ui.label(text = i.name, textBold = True, xAlign="left", yAlign="bottom", drawPriority="High"))
+    data.planetLabels[len(data.planetLabels)-1].show()
     
     labelObjectDistance.hide()
     labelObjectVelocity.hide()
     
 def onObjectClicked(obj):
-    global selectedObject
-    selectedObject = obj
+    data.selectedObject = obj
     windowPlanetInfo.show()
 
     #labelPlanetName.setText(selectedObject.name)
 
 def updatePlanetInfo():
-    global selectedObject
     #get the object velocity and position
-    xvel = selectedObject.x_vel
-    yvel = selectedObject.y_vel
+    xvel = data.selectedObject.x_vel
+    yvel = data.selectedObject.y_vel
     velocity = math.sqrt(xvel ** 2 + yvel ** 2)
-    xpos = selectedObject.x_pos
-    ypos = selectedObject.y_pos
+    xpos = data.selectedObject.x_pos
+    ypos = data.selectedObject.y_pos
     #get the distance to the parent object
-    distance = math.sqrt((xpos - selectedObject.parent.x_pos)** 2 + (ypos - selectedObject.parent.y_pos) ** 2)
+    distance = math.sqrt((xpos - data.selectedObject.parent.x_pos)** 2 + (ypos - data.selectedObject.parent.y_pos) ** 2)
     labelPlanetVelocity.setText("Velocity: " + f"{round(velocity):,d}" + " m/s")
-    labelPlanetName.setText(selectedObject.name)
+    labelPlanetName.setText(data.selectedObject.name)
     #if the object is not the sun (i.e it is orbiting something)
-    if selectedObject.solarSystemObjectID != 0:
+    if data.selectedObject.solarSystemObjectID != 0:
         #update the orbing text and thedistance text
-        labelPlanetParent.setText("Orbiting: " + str(selectedObject.parent.name))
-        labelPlanetDistance.setText("Distance to " + str(selectedObject.parent.name) 
+        labelPlanetParent.setText("Orbiting: " + str(data.selectedObject.parent.name))
+        labelPlanetDistance.setText("Distance to " + str(data.selectedObject.parent.name) 
                                     + ": " + f"{round(distance / 1000):,d}" + " km")
     #otherwise, it is orbiting nothing
     else:
         labelPlanetParent.setText("Orbiting: None")
         labelPlanetDistance.setText("")
 
-    sliderPlanetRed.setValue(selectedObject.red)
-    sliderPlanetGreen.setValue(selectedObject.green)
-    sliderPlanetBlue.setValue(selectedObject.blue)
+    sliderPlanetRed.setValue(data.selectedObject.red)
+    sliderPlanetGreen.setValue(data.selectedObject.green)
+    sliderPlanetBlue.setValue(data.selectedObject.blue)
     #inputPlanetName.defaultText = selectedObject.name
 
 def sliderZoomMoved():
-    global systemSize, screenConversion, screenOffsetX, screenOffsetY
     #set system size logarithmically
-    systemSize = 10**10 * 10**(4*(1-sliderZoom.getValue())) 
-    screenConversion
-    screenConversion = systemSize / WIDTH  # calculates the scale multiplier
-    screenOffsetX = systemSize / 2
-    screenOffsetY = (systemSize / 2) * (HEIGHT / WIDTH)
+    data.systemSize = 10**10 * 10**(4*(1-sliderZoom.getValue())) 
+    screenConversion = data.systemSize / WIDTH  # calculates the scale multiplier
+    screenOffsetX = data.systemSize / 2
+    screenOffsetY = (data.systemSize / 2) * (HEIGHT / WIDTH)
     #update screen
     ob.updateScreen(screenConversion, screenOffsetX, screenOffsetY)
 
 def sliderSimulationSpeedMoved():
-    global simulationSpeed
-    simulationSpeed = 10**sliderSimulationSpeed.getValue()
+    data.simulationSpeed = 10**sliderSimulationSpeed.getValue()
 
 def planetColourChanged():
-    global selectedObject
-    selectedObject.setColour(int(sliderPlanetRed.getValue()), 
+    data.selectedObject.setColour(int(sliderPlanetRed.getValue()), 
                              int(sliderPlanetGreen.getValue()), 
                              int(sliderPlanetBlue.getValue()))
 
-
 #update the planet labels' names and coordinates.
 def updateLabels():
-    labelSimulationSpeed.setText("Simulation rate:\n" + getSimSpeedString(simulationSpeed))
+    labelSimulationSpeed.setText("Simulation rate:\n" + getSimSpeedString(data.simulationSpeed))
     #update the planet labels
-    for i in range(0, len(planetLabels)):
-        planetLabels[i].xpos = listener.objectListeners[i].screen_x
-        planetLabels[i].ypos = listener.objectListeners[i].screen_y - listener.objectListeners[i].radius / 2 - 5
-        planetLabels[i].setText(listener.objectListeners[i].name)
+    for i in range(0, len(data.planetLabels)):
+        data.planetLabels[i].xpos = listener.objectListeners[i].screen_x
+        data.planetLabels[i].ypos = listener.objectListeners[i].screen_y - listener.objectListeners[i].radius / 2 - 5
+        data.planetLabels[i].setText(listener.objectListeners[i].name)
 
 #simplify the simulation speed label
 def getSimSpeedString(simulationSpeed):
@@ -692,69 +632,50 @@ def lessonsClicked():
     labelUpdates.hide()
 
 def onLessonsTableResult(ID):
-    global lessonID
-    global lessonStage 
-    global currentAction
-    global currentLesson
-    lessonStage = 0
-    lessonID = ID
-    objectData = []
+    data.lessonStage = 0
+    data.lessonID = ID
+    data.objectData = []
     #load the array of lessons
-    currentLesson = db.loadLessonStages(lessonID)
+    data.currentLesson = db.loadLessonStages(data.lessonID)
     #hide the window
     windowLessonsInfo.hide()
     labelLessonsInfoTitle.hide()
     #set the currrent action
-    currentAction = currentLesson[lessonStage][3]
+    data.currentAction = data.currentLesson[data.lessonStage][3]
     nextLessonStage()
 
 def checkLessonAction(action):
-    global currentAction
-    global lessonStage
     #if the required action has been completed,
-    if currentAction == action:
-        lessonStage += 1
+    if data.currentAction == action:
+        data.lessonStage += 1
         #start the next lesson stage
         nextLessonStage()
 
 def nextLessonStage(): #start the lesson stage 
-    global currentLesson
-    if currentLesson:
-        global lessonStage
-        global currentAction
+    if data.currentLesson:
         #if the lesson is finished, hide the window
-        if lessonStage >= len(currentLesson):
+        if data.lessonStage >= len(data.currentLesson):
             windowLessonText.hide()
-            currentLesson = None
+            data.currentLesson = None
         else: #otherwise, setup the new lesson stage
-            labelLessonText.setText(str(currentLesson[lessonStage][2]))
+            labelLessonText.setText(str(data.currentLesson[data.lessonStage][2]))
             windowLessonText.height = labelLessonText.height + 20
             windowLessonText.show()
-            currentAction = currentLesson[lessonStage][3]
+            data.currentAction = data.currentLesson[data.lessonStage][3]
         
 def toggleLabelsClicked():
     if buttonToggleLabels.state == 1:
-        for i in planetLabels:
+        for i in data.planetLabels:
             i.show()
     else:
-        for i in planetLabels:
+        for i in data.planetLabels:
             i.hide() 
 
 pygame.init()
+db = databaseHandler.database()
 
-global WIDTH, HEIGHT
 WIDTH = 1280
 HEIGHT = 720
-
-global creatingNewPlanet
-creatingNewPlanet = False
-
-global lessonStage
-lessonStage = None
-global lessonID 
-lessonID = None 
-global currentAction
-currentAction = None
 
 #creating a pygame screen
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -895,13 +816,13 @@ labelConfirmExit = ui.multiLinelabel(text = "Are you sure you want to exit?\nCha
 paused = False
 
 frameClock = pygame.time.Clock()
-tickClock = pygame.time.Clock()
+data.tickClock = pygame.time.Clock()
 
 FPS = 60
 frame_every_ms = 1000 / FPS
 timeSinceLastFrame = 0
 
-simulationSpeed = 1
+data.simulationSpeed = 1
 
 mainMenu()
 while True:
@@ -911,13 +832,13 @@ while True:
             sys.exit()  #quit pygame if the user quits
 
         if event.type == pygame.MOUSEBUTTONDOWN: #if the user has clicked
-            if creatingNewPlanet: #check if we are currently creating an object
-                if objectPlaceMode == 0: #if using quick place, create new object
+            if data.creatingNewPlanet: #check if we are currently creating an object
+                if data.objectPlaceMode == 0: #if using quick place, create new object
                     createNewPlanetQuick()
                     labelObjectDistance.hide()
                 else: #if we are using custom place
-                    if choosingNewObjectVelocity == False:
-                        choosingNewObjectVelocity = True
+                    if data.choosingNewObjectVelocity == False:
+                        data.choosingNewObjectVelocity = True
                         labelObjectVelocity.show()
                     else:
                         createNewPlanetCustom()
@@ -928,19 +849,19 @@ while True:
                 checkLessonAction("spacePressed")
             #if the object window is active, close it when escape pressed
             if event.key == pygame.K_ESCAPE:
-                if selectedObject:
-                    selectedObject = None
+                if data.selectedObject:
+                    data.selectedObject = None
                     windowPlanetInfo.hide()
             if event.key == pygame.K_RETURN:
                 #if the name box is active, update the name
                 if inputPlanetName.active:
-                    selectedObject.name = inputPlanetName.getInput()
+                    data.selectedObject.name = inputPlanetName.getInput()
                     updatePlanetInfo()
                 #if the mass box is active update the mass
                 if inputPlanetMass.active:
                     #this try / except handles the case where the user does not enter an integer
                     try:
-                        selectedObject.mass = int(inputPlanetMass.getInput())
+                        data.selectedObject.mass = int(inputPlanetMass.getInput())
                         updatePlanetInfo()
                     except:
                         pass
@@ -952,31 +873,31 @@ while True:
     if timeSinceLastFrame > frame_every_ms:
         SCREEN.fill((0, 0, 0)) #fill the screen black
         #draw all the objects if we are in the simulation
-        if simulation:
+        if data.simulation:
             for element in listener.objectListeners:
                 element.draw()
             #draw and update the ghost planet if a new planet is being created 
-            if creatingNewPlanet:
-                ghost_planet.update()
-                ghost_planet.draw()
+            if data.creatingNewPlanet:
+                data.ghost_planet.update()
+                data.ghost_planet.draw()
             updateLabels()
             #if an object is selected, update its information
-            if selectedObject:
+            if data.selectedObject:
                 updatePlanetInfo()
 
         for element in listener.uiListeners:
             element.draw() #draw all the UI elements
-        if selectedObject:
+        if data.selectedObject:
             pygame.draw.circle(SCREEN, (int(sliderPlanetRed.getValue()), int(sliderPlanetGreen.getValue()), int(sliderPlanetBlue.getValue())), (sliderPlanetGreen.xpos + 280, int(sliderPlanetGreen.ypos + sliderPlanetGreen.height / 2)), 40)
         pygame.display.update() #update the display
         timeSinceLastFrame = timeSinceLastFrame - frame_every_ms
 
     #if we are in the simulation we update all the systemObjects
-    if simulation:
+    if data.simulation:
         for element in listener.objectListeners:
-            element.tick(timeSinceLastTick * simulationSpeed)
+            element.tick(data.timeSinceLastTick * data.simulationSpeed)
     
     #updating the clocks
     timeSinceLastFrame = timeSinceLastFrame + frameClock.tick()
-    if simulation:
-        timeSinceLastTick = tickClock.tick()
+    if data.simulation:
+        data.timeSinceLastTick = data.tickClock.tick()

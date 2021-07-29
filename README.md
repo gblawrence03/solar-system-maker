@@ -11,3 +11,15 @@ Dependencies:
 Oracle Instant Client
 - You will need to download and unzip the Oracle Instant Client from https://www.oracle.com/uk/database/technologies/instant-client/microsoft-windows-32-downloads.html. This allows the application to connect to the SolarSystemMaker database. 
 - Open the folder and find the instant client folder within it. Put this folder in the same directory as the SolarSystemMaker files. To start SolarSystemMaker, run main.py.
+
+After installation your directory should look like:
+
+solar-system-maker-main
+    - main.py
+    - databaseHandler.py
+    - objectHandler.py
+    - userInterface.py
+    - eventListener.py
+    - instantclient_19_11
+        - etc
+    - readme, license, etc
