@@ -32,9 +32,9 @@ class database():
         cur.execute(cmd)
         self.self.con.commit()
 
-    def insertSolarSystem(self, name, date, objectCount, userID):
+    def insertSolarSystem(self, name, date, objectCount, userID, simDate):
         cur = self.con.cursor()
-        cmd = '''INSERT INTO solarsystems VALUES (seq_solarsystem.nextval, '{}', '{}', '{}')'''.format(name, date, objectCount)
+        cmd = '''INSERT INTO solarsystems VALUES (seq_solarsystem.nextval, '{}', '{}', '{}', TO_TIMESTAMP('{}', 'YYYY-MM-DD HH24:MI:SS:FF'))'''.format(name, date, objectCount, simDate)
         cur.execute(cmd)
         cmd = '''INSERT INTO user_solarsystems VALUES (seq_usersolarsystem.nextval, '{}', seq_solarsystem.currval)'''.format(userID)
         cur.execute(cmd)
@@ -122,9 +122,9 @@ class database():
         self.con.commit()
 
     #updates a solar system with new information
-    def updateSolarSystem(self, date, objectCount, solarsystemID): 
-        cmd = """UPDATE solarsystems SET last_date = '{}', object_count = '{}'
-                WHERE solarsystem_id = '{}'""".format(date, objectCount, solarsystemID)
+    def updateSolarSystem(self, date, objectCount, solarsystemID, simDate): 
+        cmd = """UPDATE solarsystems SET last_date = '{}', object_count = '{}', sim_date = TO_TIMESTAMP('{}', 'YYYY-MM-DD HH24:MI:SS:FF')
+                WHERE solarsystem_id = '{}'""".format(date, objectCount, simDate, solarsystemID)
         cur = self.con.cursor()
         cur.execute(cmd)
         self.con.commit()

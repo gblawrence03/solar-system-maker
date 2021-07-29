@@ -39,6 +39,7 @@ class data():
     tickClock = None
     timeSinceLastTick = 0
     ghost_planet = None
+    simDate = None
 
 class ghostPlanet():
     def __init__(self, radius, colour):
@@ -149,7 +150,8 @@ def createSolarSystem(name):
     data.systemObjects = []
     date = datetime.date.today().strftime("%d-%b-%y").upper()
     data.objectCount = 1
-    db.insertSolarSystem(name, date, data.objectCount, data.userID)
+    data.simDate = datetime.datetime.today()
+    db.insertSolarSystem(name, date, data.objectCount, data.userID, data.simDate)
 
 def loadSolarSystemList():
     choices = db.getUserSolarSystems(data.userID)
@@ -320,8 +322,6 @@ def createSystemClicked():
     #hide the user interface
     ui.hideAll()
     #create objectData for guests 
-    data.objectData = []
-    data.objectData.append([0, data.solarSystemID, 0, 0, "Sun", 0, 0, 0, 0, 1.989 * (10 ** 30), 255, 255, 0])
     if data.userID != 1:
         #if the user is not a guest, we upload the new solar system to the database, with the name
         createSolarSystem(inputSystemName.getInput())
@@ -329,8 +329,9 @@ def createSystemClicked():
         solarSystemID = db.getNewSolarSystem()
         data.solarSystemID = int(solarSystemID[0][0])
         #we create objectData and add the default star 
-        data.objectData = []
-        data.objectData.append([0, data.solarSystemID, 0, 0, "Sun", 0, 0, 0, 0, 1.989 * (10 ** 30), 255, 255, 0])
+    data.objectData = []
+    data.objectData.append([0, data.solarSystemID, 0, 0, "Sun", 0, 0, 0, 0, 1.989 * (10 ** 30), 255, 255, 0])
+    if data.userID != 1:
         #then we update the database with the new objectData
         db.updateObjectsDatabase(data.objectData)
     data.objectCount = 1
@@ -356,6 +357,9 @@ def onLoadTableResult(ID):
     data.objectCount = solarSystem[0][3]
     data.systemSize = 1000000000000
     data.objectData = db.loadObjects(data.solarSystemID)
+    data.simDate = solarSystem[0][4]
+    if not data.simDate:
+        data.simDate = datetime.datetime.today()
     #running simulationSetup to complete the rest of setup
     simulationSetup()
 
@@ -369,8 +373,6 @@ def simulationSetup():
     ob.updateScreen(data.screenConversion, data.screenOffsetX, data.screenOffsetY)
 
     #load the objects from the database and create the systemObjects
-    #if userID != 1:
-     #   objectData = db.loadObjects(solarSystemID)
     createSystemObjects()
     data.simulation = True
 
@@ -379,6 +381,7 @@ def simulationSetup():
     buttonNewPlanet.show()
     sliderSimulationSpeed.show()
     labelSimulationSpeed.show()
+    labelSimulationTime.show()
     buttonToggleLabels.show()
     sliderZoom.show()
     labelZoom.show()
@@ -396,10 +399,6 @@ def simulationSetup():
         buttonSimulationSave.show()
 
     buttonLessons.show()
-    '''
-    sliderZoom.value = sliderZoom.defaultValue
-    sliderSimulationSpeed.value = sliderSimulationSpeed.defaultValue
-'''
 
     #fixes a crash caused when reloading solar sysems
     data.planetLabels.clear()
@@ -423,7 +422,7 @@ def simulationSaveClicked():
     pygame.display.update()
     data.objectData = createObjectData()
     db.updateObjectsDatabase(data.objectData)
-    db.updateSolarSystem(datetime.date.today().strftime("%d-%b-%y").upper(), data.objectCount, data.solarSystemID)
+    db.updateSolarSystem(datetime.date.today().strftime("%d-%b-%y").upper(), data.objectCount, data.solarSystemID, data.simDate)
     data.objectData = []
     labelUpdates.hide()
     simulationSaveSetup()
@@ -579,6 +578,7 @@ def planetColourChanged():
 #update the planet labels' names and coordinates.
 def updateLabels():
     labelSimulationSpeed.setText("Simulation rate:\n" + getSimSpeedString(data.simulationSpeed))
+    labelSimulationTime.setText("Date / Time:\n" + data.simDate.strftime("%d/%m/%Y, %H:%M:%S"))
     #update the planet labels
     for i in range(0, len(data.planetLabels)):
         data.planetLabels[i].xpos = listener.objectListeners[i].screen_x
@@ -730,6 +730,7 @@ sliderZoom = ui.slider(xpos = 400, ypos = HEIGHT - 70, leftValue=0, rightValue=1
 sliderSimulationSpeed = ui.slider(xpos = 100, ypos = HEIGHT - 70, leftValue=0, rightValue=8, action=sliderSimulationSpeedMoved, defaultValue=0, 
                        lineColour=(166, 166, 166), btnColour=(91, 155, 213), height=30, btnWidth=8, width = 200)
 
+labelSimulationTime = ui.multiLinelabel(xpos = 800, xAlign = "centre", yAlign = "centre", textBold=False, ypos = HEIGHT - 70, textSize = 22, maxWidth = 300)
 labelSimulationSpeed = ui.multiLinelabel(xpos = 200, xAlign = "centre", textBold=False, ypos = HEIGHT - 120, textSize = 22, maxWidth = 300)
 labelZoom = ui.multiLinelabel(xpos = 400 + sliderZoom.width / 2, xAlign = "centre", textBold=False, ypos = HEIGHT - 100, textSize = 22, maxWidth = 300, text = "Zoom")
 
@@ -896,6 +897,7 @@ while True:
     if data.simulation:
         for element in listener.objectListeners:
             element.tick(data.timeSinceLastTick * data.simulationSpeed)
+        data.simDate = data.simDate + datetime.timedelta(milliseconds=data.timeSinceLastTick * data.simulationSpeed)
     
     #updating the clocks
     timeSinceLastFrame = timeSinceLastFrame + frameClock.tick()
