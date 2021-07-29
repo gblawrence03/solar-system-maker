@@ -1,9 +1,12 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
+import pathlib
 
-setup(name="Solar System Maker",
-      version="1.0",
+here = pathlib.Path(__file__).parent.resolve()
+
+setup(name="SolarSystemMaker",
+      version="1.0.0alpha1",
       description="Minimalistic, educational 2D solar system simulation software",
       author="George Lawrence",
       author_email="georgeblawrence@hotmail.co.uk",
       url="https://github.com/gblawrence03/solar-system-maker",
-      packages=['pygame, cx_Oracle'])
+      packages=find_packages())
