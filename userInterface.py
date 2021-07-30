@@ -225,8 +225,9 @@ class multiLinelabel(element):
         self.yAlign = yAlign
         self.textSize = textSize
         self.maxWidth = maxWidth
+        self.height = 0
         self.setText(text)
-        self.heigth = None
+        self.yOffset = 0
 
     #draw method
     def draw(self):
@@ -237,10 +238,7 @@ class multiLinelabel(element):
         self.text = text
         self.drawSurface = pygame.Surface((self.maxWidth, 1000))
         self.drawSurface.set_colorkey((0, 0, 0))
-        if self.xAlign == "centre":
-            self.textRect = (self.xpos - self.maxWidth / 2, self.ypos, self.maxWidth, 1000)
-        else:
-            self.textRect = (self.xpos, self.ypos, self.maxWidth, 1000)
+
         words = [word.split(' ') for word in self.text.splitlines()]  # 2D array where each row is a list of words.
         space = self.fontObject.size(' ')[0]  # The width of a space.
         x = 0
@@ -254,7 +252,7 @@ class multiLinelabel(element):
                 if x + word_width >= self.maxWidth:
                     line_surface = self.fontObject.render(lineText, 0, self.textColour)
                     if self.xAlign == "centre":
-                        self.drawSurface.blit(line_surface, (self.maxWidth / 2 - line_surface.get_width() / 2, y))
+                        self.drawSurface.blit(line_surface, (self.maxWidth / 2 - line_surface.get_width() / 2))
                     else:
                         self.drawSurface.blit(line_surface, (0, y))
                     x = 0  # Reset the x.
@@ -278,8 +276,15 @@ class multiLinelabel(element):
             lineText = word
             lineText += " "
             x = 0  # Reset the x.
-            y += word_height  # Start on new row.
+            y += word_height  # Start on new row. 
         self.height = y
+        if self.xAlign == "centre":
+            self.textRect = pygame.Rect(self.xpos - self.maxWidth / 2, self.ypos, self.maxWidth, 1000)
+        else:
+            self.textRect = pygame.Rect(self.xpos, self.ypos, self.maxWidth, 1000)
+        if self.yAlign == "centre":
+            self.textRect.top -= self.height / 2
+        
 
 class inputBox(element):
     def __init__(self, font = defaultFont, xpos = 0, ypos = 0, width = None, height = None, inactiveColour = defaultInputColour, 
@@ -562,7 +567,8 @@ class window(element):
 
 class slider(element):
     def __init__(self, xpos = 0, ypos = 0, width = 100, height = 20, window = None, lineColour = (255, 255, 255), 
-                 btnColour = (255, 255, 255), btnWidth = 5, leftValue = 0, rightValue = 100, defaultValue = 0, action = None, drawPriority = "Low"):
+                 btnColour = (255, 255, 255), btnWidth = 5, leftValue = 0, rightValue = 100, defaultValue = 0, action = None, 
+                 xAlign = "centre", yAlign = "centre", drawPriority = "Low"):
         super().__init__(xpos, ypos, None, None, width, height, None, window, None, None, None, drawPriority)
         self.lineColour = lineColour
         self.btnColour = btnColour
@@ -580,6 +586,12 @@ class slider(element):
         self.event = self.detectClick 
         self.action = action
         self.value = self.defaultValue
+        self.yAlign = yAlign
+        self.xAlign = xAlign
+        if self.yAlign == "centre":
+            self.yActual = self.ypos - self.height / 2
+        else:
+            self.yActual = self.ypos
     
     def setValue(self, value):
         self.value = value
@@ -587,7 +599,7 @@ class slider(element):
 
     def detectClick(self, event):
         btnRect = self.drawButtonSurface.get_rect()
-        btnRect.topleft = (self.buttonXpos, self.ypos)
+        btnRect.topleft = (self.buttonXpos, self.yActual)
         if event.type == pygame.MOUSEBUTTONDOWN:
             if btnRect.collidepoint(event.pos):
                 self.clicked = True
@@ -606,7 +618,7 @@ class slider(element):
 
     def draw(self):
         if self.showing:
-            self.screenSurface.blit(self.drawSurface, (self.xpos, self.ypos))
-            self.screenSurface.blit(self.drawButtonSurface, (self.buttonXpos, self.ypos))
+            self.screenSurface.blit(self.drawSurface, (self.xpos, self.yActual))
+            self.screenSurface.blit(self.drawButtonSurface, (self.buttonXpos, self.yActual))
 
     

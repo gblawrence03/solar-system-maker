@@ -724,15 +724,15 @@ buttonToggleLabels = ui.toggleButton(text1="Labels on", text2="Labels off", xpos
                                         textBold = True, yMargin = 2, outline = 3, textSize = 32,
                                         colour1=(91, 155, 213), colour2=(237, 125, 49))
 
-sliderZoom = ui.slider(xpos = 400, ypos = HEIGHT - 70, leftValue=0, rightValue=1, action=sliderZoomMoved, defaultValue=0.5, 
+sliderZoom = ui.slider(xpos = 400, ypos = HEIGHT - 40, leftValue=0, rightValue=1, action=sliderZoomMoved, defaultValue=0.5, 
                        lineColour=(166, 166, 166), btnColour=(91, 155, 213), height=30, btnWidth=8, width = 200)
 
-sliderSimulationSpeed = ui.slider(xpos = 100, ypos = HEIGHT - 70, leftValue=0, rightValue=8, action=sliderSimulationSpeedMoved, defaultValue=0, 
+sliderSimulationSpeed = ui.slider(xpos = 100, ypos = HEIGHT - 40, leftValue=0, rightValue=8, action=sliderSimulationSpeedMoved, defaultValue=0, 
                        lineColour=(166, 166, 166), btnColour=(91, 155, 213), height=30, btnWidth=8, width = 200)
 
-labelSimulationTime = ui.multiLinelabel(xpos = 800, xAlign = "centre", yAlign = "centre", textBold=False, ypos = HEIGHT - 70, textSize = 22, maxWidth = 300)
-labelSimulationSpeed = ui.multiLinelabel(xpos = 200, xAlign = "centre", textBold=False, ypos = HEIGHT - 120, textSize = 22, maxWidth = 300)
-labelZoom = ui.multiLinelabel(xpos = 400 + sliderZoom.width / 2, xAlign = "centre", textBold=False, ypos = HEIGHT - 100, textSize = 22, maxWidth = 300, text = "Zoom")
+labelSimulationTime = ui.multiLinelabel(xpos = 800, xAlign = "centre", yAlign = "centre", textBold=False, ypos = HEIGHT - 40, textSize = 22, maxWidth = 300)
+labelSimulationSpeed = ui.multiLinelabel(xpos = 200, xAlign = "centre", textBold=False, ypos = sliderSimulationSpeed.ypos - 50, textSize = 22, maxWidth = 300)
+labelZoom = ui.multiLinelabel(xpos = sliderZoom.xpos + sliderZoom.width / 2, xAlign = "centre", textBold=False, ypos = sliderZoom.ypos - 30, textSize = 22, maxWidth = 300, text = "Zoom")
 
 sliderPlanetRed = ui.slider(xpos = 20, ypos = 170, leftValue=0, rightValue=255, action=planetColourChanged, defaultValue=0.5, 
                        lineColour=(255, 0, 0), btnColour=(91, 155, 213), height=30, btnWidth=8, width = 200, window=windowPlanetInfo)
@@ -792,7 +792,7 @@ windowLessonText = ui.window(text = "", colour = (38, 38, 38), xpos = 50,
                             outlineColour = (127, 127, 127))
 labelLessonText = ui.multiLinelabel(text = "", 
                                xpos = 10, ypos = 10, maxWidth = windowLessonText.width - 20, 
-                               xAlign = "left", window=windowLessonText, textSize=24)
+                               xAlign = "left", yAlign = "top", window=windowLessonText, textSize=24)
 
 windowSimulationExit = ui.window(text = "", colour = (38, 38, 38), 
                                 xpos = WIDTH / 2 - 200, ypos = HEIGHT / 2 - 50, 
@@ -812,7 +812,7 @@ buttonCancelExit = ui.actionButton(text="Cancel", xpos = windowSimulationExit.wi
 labelConfirmExit = ui.multiLinelabel(text = "Are you sure you want to exit?\nChanges may not be saved.", 
                                     xpos = windowSimulationExit.width / 2, ypos = 10, 
                                     textBold=True, maxWidth = windowSimulationExit.width,
-                                    xAlign = "centre", window=windowSimulationExit)
+                                    xAlign = "centre", yAlign = "top", window=windowSimulationExit)
 
 paused = False
 
