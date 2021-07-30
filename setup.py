@@ -9,7 +9,7 @@ import pathlib
 here = pathlib.Path(__file__).parent.resolve()
 
 setup(name="SolarSystemMaker",
-      version="1.0.0alpha1",
+      version="1.0.1alpha1",
       description="Minimalistic, educational 2D solar system simulation software",
       author="George Lawrence",
       author_email="georgeblawrence@hotmail.co.uk",

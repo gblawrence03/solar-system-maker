@@ -10,7 +10,7 @@ import sys
 
 import math
 
-version = "Alpha v1.0.0"
+version = "Alpha v1.0.1"
 
 class data():
     userID = 0
