@@ -30,7 +30,7 @@ class database():
         cmd = '''INSERT INTO accounts (user_id, username, password) VALUES (seq_userid.nextval, '{}', '{}')'''.format(username, password)
         #using the seq_userid sequence 
         cur.execute(cmd)
-        self.self.con.commit()
+        self.con.commit()
 
     def insertSolarSystem(self, name, date, objectCount, userID, simDate):
         cur = self.con.cursor()
@@ -123,13 +123,15 @@ class database():
 
     #updates a solar system with new information
     def updateSolarSystem(self, date, objectCount, solarsystemID, simDate): 
+        print("updateSolarSystem:")
+        print("objectCount = " + str(objectCount))
         cmd = """UPDATE solarsystems SET last_date = '{}', object_count = '{}', sim_date = TO_TIMESTAMP('{}', 'YYYY-MM-DD HH24:MI:SS:FF')
                 WHERE solarsystem_id = '{}'""".format(date, objectCount, simDate, solarsystemID)
         cur = self.con.cursor()
         cur.execute(cmd)
         self.con.commit()
 
-    #getting all the interactive lessons
+    #getting all the interactive lessonsw
     def loadLessons(self):
         cur = self.con.cursor() #create a cursor object from the self.connection object
         cmd = "SELECT * FROM lessons"

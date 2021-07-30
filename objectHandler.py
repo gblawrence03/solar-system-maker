@@ -15,6 +15,7 @@ def updateScreen(screenConv, screenOffX, screenOffY):
 
 class systemObject():
     def __init__(self, data):
+        print("Planet created")
         self.objectListeners.append(self)
         self.data = data
         self.objectID = data[0]

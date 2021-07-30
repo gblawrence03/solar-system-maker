@@ -322,16 +322,18 @@ def createSystemClicked():
     #hide the user interface
     ui.hideAll()
     #create objectData for guests 
+    data.objectData = []
+    data.objectData.append([0, data.solarSystemID, 0, 0, "Sun", 0, 0, 0, 0, 1.989 * (10 ** 30), 255, 255, 0])
     if data.userID != 1:
         #if the user is not a guest, we upload the new solar system to the database, with the name
         createSolarSystem(inputSystemName.getInput())
         #to get the ID of the new solar system, we call getNewSolarSystem
         solarSystemID = db.getNewSolarSystem()
         data.solarSystemID = int(solarSystemID[0][0])
-        #we create objectData and add the default star 
-    data.objectData = []
-    data.objectData.append([0, data.solarSystemID, 0, 0, "Sun", 0, 0, 0, 0, 1.989 * (10 ** 30), 255, 255, 0])
-    if data.userID != 1:
+
+        data.objectData = []
+        data.objectData.append([0, data.solarSystemID, 0, 0, "Sun", 0, 0, 0, 0, 1.989 * (10 ** 30), 255, 255, 0])
+    
         #then we update the database with the new objectData
         db.updateObjectsDatabase(data.objectData)
     data.objectCount = 1
@@ -373,6 +375,8 @@ def simulationSetup():
     ob.updateScreen(data.screenConversion, data.screenOffsetX, data.screenOffsetY)
 
     #load the objects from the database and create the systemObjects
+    if data.userID != 1:
+        data.objectData = db.loadObjects(data.solarSystemID)
     createSystemObjects()
     data.simulation = True
 
@@ -426,6 +430,7 @@ def simulationSaveClicked():
     data.objectData = []
     labelUpdates.hide()
     simulationSaveSetup()
+
     pygame.display.update()
 
 def simulationExitClicked():
@@ -475,7 +480,7 @@ def createNewPlanetCustom():
     data.objectCount += 1
     #register as listener 
     listener.objectListeners.append(ob.systemObject([0, data.solarSystemID, parent.solarSystemObjectID, 
-                                                    data.objectCount, "Planet " + str(data.objectCount), xpos, 
+                                                    data.objectCount, "Planet " + str(data.objectCount - 1), xpos, 
                                                     ypos, xvel, yvel, 1.89 * 10 ** 24, 230, 130, 130]))
     i=listener.objectListeners[len(listener.objectListeners)-1]
     i.init()
@@ -510,7 +515,7 @@ def createNewPlanetQuick():
     #create new object
     data.objectCount += 1
     listener.objectListeners.append(ob.systemObject([0, data.solarSystemID, parent.solarSystemObjectID, 
-                                                    data.objectCount, "Planet " + str(data.objectCount), xpos, ypos, 
+                                                    data.objectCount, "Planet " + str(data.objectCount - 1), xpos, ypos, 
                                                     xvel, yvel, 1.89 * 10 ** 24, 230, 130, 130]))
     i=listener.objectListeners[len(listener.objectListeners)-1]
     i.init()
