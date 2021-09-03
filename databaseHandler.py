@@ -5,7 +5,7 @@ class database():
     def __init__(self):
         #getting the instant client
         currentpath = os.path.dirname(os.path.abspath(__file__))
-        clientpath = os.path.join(currentpath, "instantclient_19_11")
+        clientpath = os.path.join(currentpath, "instantclient_19_12")
         cx.init_oracle_client(lib_dir=clientpath)
         self.dbConnect()
 
