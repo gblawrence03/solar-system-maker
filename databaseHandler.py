@@ -72,7 +72,7 @@ class database():
             cmd = """SELECT * FROM solarsystems 
             INNER JOIN user_solarsystems ON 
             solarsystems.solarsystem_id = user_solarsystems.solarsystem_id 
-            WHERE user_solarsystems.user_id = '{}'""".format(userID)
+            WHERE user_solarsystems.user_id = '{}' ORDER BY last_date DESC""".format(userID)
             #Loads the user's solar systems, if the user is not a Guest
             cur.execute(cmd)
             data = cur.fetchall()
@@ -123,8 +123,6 @@ class database():
 
     #updates a solar system with new information
     def updateSolarSystem(self, date, objectCount, solarsystemID, simDate): 
-        print("updateSolarSystem:")
-        print("objectCount = " + str(objectCount))
         cmd = """UPDATE solarsystems SET last_date = '{}', object_count = '{}', sim_date = TO_TIMESTAMP('{}', 'YYYY-MM-DD HH24:MI:SS:FF')
                 WHERE solarsystem_id = '{}'""".format(date, objectCount, simDate, solarsystemID)
         cur = self.con.cursor()

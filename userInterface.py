@@ -2,13 +2,12 @@ import pygame
 from math import ceil
 pygame.init()
 
-def init(surface, arrayListeners):
+def init(surface, listener):
     element.screenSurface = surface
-    element.uiListeners = arrayListeners
+    element.listener = listener
 
 def hideAll():
-    for i in element.uiListeners:
-        i.hide()
+    element.listener.hideUI()
 
 defaultColour = (255, 255, 255)
 defaultInputColour = (64, 64, 64)
@@ -20,14 +19,7 @@ specialKeys = [pygame.K_RETURN, pygame.K_TAB, pygame.K_ESCAPE]
 
 class element():
     def __init__(self, xpos, ypos, text, font, width, height, event, window, textColour, textBold, textItalics, drawPriority):
-        if drawPriority == "Low":
-            self.uiListeners.append(self)
-        elif drawPriority == "High":
-            self.uiListeners.insert(0, self)
-        self.xpos = xpos
-        self.ypos = ypos
-        self.width = width
-        self.height = height
+        self.listener.addUIElement(self, drawPriority)
         self.text = text
         self.font = font 
         self.showing = False
@@ -36,11 +28,8 @@ class element():
         self.textColour = textColour
         self.textBold = textBold
         self.textItalics = textItalics
-        #adding to a window
+        self.setRect(xpos, ypos, width, height)
         if self.window != None:
-            #updating coordinates 
-            self.xpos += self.window.xpos
-            self.ypos += self.window.ypos
             self.window.add(self)
 
     def show(self):
@@ -48,6 +37,16 @@ class element():
 
     def hide(self):
         self.showing = False
+
+    def setRect(self, x, y, w, h):
+        self.width = w
+        self.height = h
+        self.xpos = x
+        self.ypos = y
+        if self.window != None:
+            #updating coordinates 
+            self.xpos += self.window.xpos
+            self.ypos += self.window.ypos
 
 class actionButton(element):
     def __init__(self, font = defaultFont, xpos = 0, ypos = 0, width = None, height = None, colour = defaultColour, text = "Button", 
@@ -69,6 +68,24 @@ class actionButton(element):
         self.yAlign = yAlign
         self.textSurface = self.fontObject.render(self.text, True, textColour)
         #setting the width and margins
+        self.updateRect(self.xpos, self.ypos, self.width, self.height)
+
+    #draw function called every frame
+    def draw(self):
+        if self.showing:
+            self.screenSurface.blit(self.textSurface, self.textRect)
+            pygame.draw.rect(self.screenSurface, self.colour, self.buttonRect, self.outline)
+
+    #event function called every frame
+    def detectClick(self, event):
+        if self.showing:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if self.buttonRect.collidepoint(event.pos):
+                    if self.action != None:
+                        return self.action()
+
+    def updateRect(self, xpos, ypos, width, height):
+        self.setRect(xpos, ypos, width, height)
         if self.width == None:
             self.width = self.textSurface.get_width() + self.xMargin * 2
         if self.height == None:
@@ -94,22 +111,6 @@ class actionButton(element):
         if self.yAlign == "bottom":
             self.textRect.bottom = self.ypos
             self.buttonRect.bottom = self.ypos
-
-    #draw function called every frame
-    def draw(self):
-        if self.showing:
-            #self.textRect.center = self.buttonRect.center
-            #self.buttonRect.center = (self.xpos, self.ypos)
-            self.screenSurface.blit(self.textSurface, self.textRect)
-            pygame.draw.rect(self.screenSurface, self.colour, self.buttonRect, self.outline)
-
-    #event function called every frame
-    def detectClick(self, event):
-        if self.showing:
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if self.buttonRect.collidepoint(event.pos):
-                    if self.action != None:
-                        return self.action()
     
     def getID(self):
         return self.id
@@ -190,8 +191,11 @@ class label(element):
     #draw method
     def draw(self):
         if self.showing:
-            
             self.screenSurface.blit(self.textSurface, self.textRect)
+
+    def updateRect(self, xpos, ypos):
+        self.setRect(xpos, ypos, None, None)
+        self.setText(self.text)
 
     def setText(self, text):
         self.text = text
@@ -233,6 +237,10 @@ class multiLinelabel(element):
     def draw(self):
         if self.showing:
             self.screenSurface.blit(self.drawSurface, self.textRect)
+
+    def updateRect(self, xpos, ypos):
+        self.setRect(xpos, ypos, None, None)
+        self.setText(self.text)
 
     def setText(self, text):
         self.text = text
@@ -300,6 +308,14 @@ class inputBox(element):
         self.text = self.defaultText
         self.showing = False
         self.event = self.update
+        self.asterisks = asterisks
+        self.active = False
+        self.outline = outline
+        self.updateRect(self.xpos, self.ypos, self.width, self.height)
+        self.displayText = self.text #the text to be displayed, may be different 
+
+    def updateRect(self, xpos, ypos, width, height):
+        self.setRect(xpos, ypos, width, height)
         self.textSurface = self.fontObject.render(self.defaultText, True, self.textColour)
         if self.width == None:
             self.width = self.textSurface.get_width()
@@ -307,10 +323,6 @@ class inputBox(element):
             self.height = self.textSurface.get_height()
         self.boxRect = pygame.Rect(self.xpos, self.ypos, self.width, self.height)
         self.textRect = self.boxRect
-        self.displayText = self.text #the text to be displayed, may be different 
-        self.asterisks = asterisks
-        self.active = False
-        self.outline = outline
 
     def draw(self):
         place = 0
@@ -393,36 +405,19 @@ class table(element):
         self.fontObject = pygame.font.Font(pygame.font.match_font(font, self.textBold, self.textItalics), textSize)
         self.colour = colour
         #width, surfaces and rects
-        self.textSurface = self.fontObject.render(self.text, True, textColour)
-        self.rect = pygame.Rect(self.xpos, self.ypos, self.width, self.height)
-        self.rect.center = (self.xpos, self.ypos)
-        self.textRect = self.textSurface.get_rect()
         self.rowsPerPage = rowsPerPage
         self.textSize = textSize
         self.data = data
         self.page = 0 #represents which page of the table 
+        self.selectButtonText = buttonText
         self.selectButtons = selectButtons
+        self.selectButtonList = []
+        self.labels = []
         #maxPage is the last page number
         self.maxPage = ceil((len(self.data) - 1) / (self.rowsPerPage) - 1)
-        self.widthPerCell = self.width / len(self.data[0])
-        self.heightPerCell = self.height / (self.rowsPerPage + 1)
-        #the two buttons to go to the next page and the previous page 
-        self.buttonNextPage = actionButton(xpos = self.xpos + self.width, ypos = self.ypos + height + self.heightPerCell / 2, text = "Next page", 
-                                           action = self.nextPage, outline = 2, textSize=self.textSize, textBold=True, xAlign = "right")
-        self.buttonPreviousPage = actionButton(xpos = self.xpos, ypos = self.ypos + height + self.heightPerCell / 2, text = "Previous page", 
-                                               action = self.prevPage, outline = 2, textSize=self.textSize, textBold=True, xAlign = "left")
-        self.labels = []
-        #if buttons are on, we create a button for each line of data
-        if selectButtons:
-            self.event = self.getInput
-            self.selectButtonList = []
-            for row in range(1, len(self.data)):
-                self.selectButtonList.append(actionButton(xpos = self.xpos + self.width, 
-                                                          ypos = self.ypos + ((row - 1) % self.rowsPerPage + 1) * self.heightPerCell + self.heightPerCell / 2, 
-                                                          action="getID", text=buttonText, ID=self.data[row][len(self.data[1]) - 1], 
-                                                          textSize=self.textSize, textBold=True, xAlign = "right"))
-        #update labels is called to create and show all of the labels relevant to the current page
-        self.updateLabels()
+        self.buttonNextPage = None
+        self.buttonPreviousPage = None
+        self.updateRect(xpos, ypos, width, height)
 
     #when next page button is clicked
     def nextPage(self):
@@ -440,16 +435,13 @@ class table(element):
             i.hide()
         for i in self.selectButtonList:
             i.hide()
+        for i in self.labels:
+            self.listener.removeUIElement(i)
+            del i 
+        self.labels.clear()
         self.labels = []
         #update the next and previous page buttons
-        if self.page == 0:
-            self.buttonPreviousPage.hide()
-        else:
-            self.buttonPreviousPage.show()
-        if self.page >= self.maxPage:
-            self.buttonNextPage.hide()
-        else:
-            self.buttonNextPage.show()
+        self.updatePageButtons()
         #no matter what page we are on, we create the column headers in self.data[0]
         for column in range(len(self.data[0])):
             self.labels.append(label(xpos = self.xpos + column * self.widthPerCell, 
@@ -473,18 +465,19 @@ class table(element):
                                              ypos = self.ypos + xrow * self.heightPerCell + self.heightPerCell / 2, 
                                              text = self.data[row][column], textSize = self.textSize, xAlign = "left"))
             xrow += 1
-        #show all the labels
-        for i in self.labels: 
-            i.show()
-        #if each button belongs on the current page, show it
-        start = self.page * self.rowsPerPage + 1 
-        end = (self.page + 1) * self.rowsPerPage
-        for i in range(start -1, end):
-            #this exception handles the case that the last page is not filled
-            try:
-                self.selectButtonList[i].show()
-            except:
-                pass
+        #show all the labels if shwoign
+        if self.showing:
+            for i in self.labels: 
+                i.show()
+            #if each button belongs on the current page, show it
+            start = self.page * self.rowsPerPage + 1 
+            end = (self.page + 1) * self.rowsPerPage
+            for i in range(start -1, end):
+                #this exception handles the case that the last page is not filled
+                try:
+                    self.selectButtonList[i].show()
+                except:
+                    pass
 
     def getInput(self, event):
         #if the user clicks anywhere on the table, run its event function
@@ -497,10 +490,58 @@ class table(element):
                     #run the table's action function
                     self.action(result)
 
+    def updateRect(self, xpos, ypos, width, height):
+        self.setRect(xpos, ypos, width, height)
+        self.textSurface = self.fontObject.render(self.text, True, self.textColour)
+        self.rect = pygame.Rect(self.xpos, self.ypos, self.width, self.height)
+        self.rect.center = (self.xpos, self.ypos)
+        self.textRect = self.textSurface.get_rect()
+        self.widthPerCell = self.width / len(self.data[0])
+        self.heightPerCell = self.height / (self.rowsPerPage + 1)
+        #the two buttons to go to the next page and the previous page 
+        if self.buttonNextPage:
+            self.listener.removeUIElement(self.buttonNextPage)
+        if self.buttonPreviousPage:
+            self.listener.removeUIElement(self.buttonPreviousPage)
+        self.buttonNextPage = actionButton(xpos = self.xpos + self.width, ypos = self.ypos + height + self.heightPerCell / 2, text = "Next page", 
+                                           action = self.nextPage, outline = 2, textSize=self.textSize, textBold=True, xAlign = "right")
+        self.buttonPreviousPage = actionButton(xpos = self.xpos, ypos = self.ypos + height + self.heightPerCell / 2, text = "Previous page", 
+                                               action = self.prevPage, outline = 2, textSize=self.textSize, textBold=True, xAlign = "left")
+        for i in self.selectButtonList:
+            self.listener.removeUIElement(i)
+            del i
+        self.selectButtonList.clear()
+        #if buttons are on, we create a button for each line of data
+        if self.selectButtons:
+            self.event = self.getInput
+            self.selectButtonList = []
+            for row in range(1, len(self.data)):
+                self.selectButtonList.append(actionButton(xpos = self.xpos + self.width, 
+                                                          ypos = self.ypos + ((row - 1) % self.rowsPerPage + 1) * self.heightPerCell + self.heightPerCell / 2, 
+                                                          action="getID", text=self.selectButtonText, ID=self.data[row][len(self.data[1]) - 1], 
+                                                          textSize=self.textSize, textBold=True, xAlign = "right"))
+        self.updateLabels()
+
+    def updatePageButtons(self):
+        if self.showing:
+            if self.page == 0:
+                self.buttonPreviousPage.hide()
+            else:
+                self.buttonPreviousPage.show()
+            if self.page >= self.maxPage:
+                self.buttonNextPage.hide()
+            else:
+                self.buttonNextPage.show()
+
     def show(self):
         self.showing = True
+        if self.selectButtons:
+            for i in self.selectButtonList:
+                i.show()
+        self.updatePageButtons()
         for i in self.labels:
             i.show()
+        
     
     def hide(self):
         self.showing = False
@@ -517,7 +558,7 @@ class table(element):
             #draw all labels
             for i in self.labels:
                 i.draw()
-            self.buttonNextPage.draw()
+            #self.buttonNextPage.draw()
             self.boxRect = pygame.Rect(self.xpos, self.ypos, self.width, self.height)
             #draw lines separating the rows
             for line in range(self.rowsPerPage + 2):
@@ -553,6 +594,9 @@ class window(element):
     def add(self, obj):
         self.childElements.append(obj)
 
+    def updateRect(self, xpos, ypos, width, height):
+        self.setRect(xpos, ypos, width, height)
+
     #shows every element in the window
     def show(self):
         self.showing = True
@@ -576,22 +620,14 @@ class slider(element):
         self.leftValue = leftValue
         self.rightValue = rightValue
         self.defaultValue = defaultValue
-        self.drawSurface = pygame.Surface((self.width + self.btnWidth, self.height))
-        self.drawSurface.set_colorkey((0, 0, 0))
-        pygame.draw.line(self.drawSurface, self.lineColour, (0, self.height / 2), (self.width - 1, self.height / 2), btnWidth)
-        self.drawButtonSurface = pygame.Surface((self.btnWidth, self.height))
-        self.drawButtonSurface.fill(btnColour)
-        self.buttonXpos = self.xpos + self.defaultValue / (self.rightValue - self.leftValue) * self.width
+        self.value = self.defaultValue
         self.clicked = False
+        self.buttonXpos = self.xpos + self.defaultValue / (self.rightValue - self.leftValue) * self.width
         self.event = self.detectClick 
         self.action = action
-        self.value = self.defaultValue
         self.yAlign = yAlign
         self.xAlign = xAlign
-        if self.yAlign == "centre":
-            self.yActual = self.ypos - self.height / 2
-        else:
-            self.yActual = self.ypos
+        self.updateRect(xpos, ypos, width, height)
     
     def setValue(self, value):
         self.value = value
@@ -615,6 +651,18 @@ class slider(element):
 
     def getValue(self):
         return self.value
+
+    def updateRect(self, xpos, ypos, width, height):
+        self.setRect(xpos, ypos, width, height)
+        self.drawSurface = pygame.Surface((self.width + self.btnWidth, self.height))
+        self.drawSurface.set_colorkey((0, 0, 0))
+        pygame.draw.line(self.drawSurface, self.lineColour, (0, self.height / 2), (self.width - 1, self.height / 2), self.btnWidth)
+        self.drawButtonSurface = pygame.Surface((self.btnWidth, self.height))
+        self.drawButtonSurface.fill(self.btnColour)
+        if self.yAlign == "centre":
+            self.yActual = self.ypos - self.height / 2
+        else:
+            self.yActual = self.ypos
 
     def draw(self):
         if self.showing:

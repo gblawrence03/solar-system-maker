@@ -15,7 +15,6 @@ def updateScreen(screenConv, screenOffX, screenOffY):
 
 class systemObject():
     def __init__(self, data):
-        print("Planet created")
         self.objectListeners.append(self)
         self.data = data
         self.objectID = data[0]
@@ -99,10 +98,10 @@ class systemObject():
             self.x_pos = self.x_pos + self.x_vel * timeSinceLastTick / 1000
             self.y_pos = self.y_pos + self.y_vel * timeSinceLastTick / 1000
             #convert position to screen coordinates
-            self.convertCoords()
         #if it is the sun, no update needs to occur, as the sun remains in the centre
         else:
             self.parent = self
+        self.convertCoords()
         
     def debug(self):
         print("MY ID:", self.solarSystemObjectID)
