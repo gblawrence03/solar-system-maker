@@ -17,13 +17,21 @@ For 64 bit Python use https://drive.google.com/drive/folders/1JYQCkZFdkGfP6dyEha
 After installation your directory should look like:
 
 solar-system-maker-main
+
 > main.py
+
 > databaseHandler.py
+
 > objectHandler.py
+
 > userInterface.py
+
 > eventListener.py
+
 > instantclient_19_12
+
 > > etc
+
 > readme, license, etc
 
 **Errors**:
