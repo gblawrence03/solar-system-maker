@@ -68,7 +68,7 @@ class actionButton(element):
         self.yAlign = yAlign
         self.textSurface = self.fontObject.render(self.text, True, textColour)
         #setting the width and margins
-        self.updateRect(self.xpos, self.ypos, self.width, self.height)
+        self.updateRect(xpos, ypos, self.width, self.height)
 
     #draw function called every frame
     def draw(self):
@@ -311,7 +311,7 @@ class inputBox(element):
         self.asterisks = asterisks
         self.active = False
         self.outline = outline
-        self.updateRect(self.xpos, self.ypos, self.width, self.height)
+        self.updateRect(xpos, ypos, self.width, self.height)
         self.displayText = self.text #the text to be displayed, may be different 
 
     def updateRect(self, xpos, ypos, width, height):

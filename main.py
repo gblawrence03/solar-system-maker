@@ -13,7 +13,7 @@ import os
 
 import math
 
-VERSION = "v1.0.2 Alpha"
+VERSION = "v1.0.3 Alpha"
 
 class data():
     userID = 0
@@ -112,7 +112,7 @@ class ghostPlanet():
 
 class Window():
     def __init__(self):
-        self.SCREEN = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        self.SCREEN = pygame.display.set_mode((0, 0), FULLSCREEN)
         pygame.display.set_caption("SolarSystemMaker " + VERSION)
         self.WIDTH, self.HEIGHT = pygame.display.get_surface().get_size()
         self.SAVED_WIDTH, self.SAVED_HEIGHT = 1280, 720
@@ -122,7 +122,7 @@ class Window():
         if self.FULLSCREEN:
             self.SCREEN = pygame.display.set_mode((self.SAVED_WIDTH, self.SAVED_HEIGHT), pygame.RESIZABLE)
         else:
-            self.SCREEN = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+            self.SCREEN = pygame.display.set_mode((0, 0), FULLSCREEN)
         self.WIDTH, self.HEIGHT = pygame.display.get_surface().get_size()
         self.FULLSCREEN = not self.FULLSCREEN
         gui.reloadUI()
@@ -138,10 +138,9 @@ class UIElements():
                             height = window.HEIGHT, outlineColour=(127, 127, 127))
 
         self.labelPlanetName = ui.label(text="", xAlign="centre", window = self.windowPlanetInfo, ypos = 30, xpos = 240, textBold=True, textSize = 32)
-        self.labelPlanetVelocity = ui.label(text="", xAlign="left", window = self.windowPlanetInfo, ypos = 130, xpos = 10, textBold=True, textSize = 20)
-        self.labelPlanetDistance = ui.label(text="", xAlign="left", window = self.windowPlanetInfo, ypos = 100, xpos = 10, textBold=True, textSize = 20)
-        self.labelPlanetParent = ui.label(text="", xAlign="left", window = self.windowPlanetInfo, ypos = 70, xpos = 10, textBold=True, textSize = 20)
-
+        self.labelPlanetVelocity = ui.label(text="", xAlign="left", window = self.windowPlanetInfo, ypos = 130, xpos = 20, textBold=True, textSize = 20)
+        self.labelPlanetDistance = ui.label(text="", xAlign="left", window = self.windowPlanetInfo, ypos = 100, xpos = 20, textBold=True, textSize = 20)
+        self.labelPlanetParent = ui.label(text="", xAlign="left", window = self.windowPlanetInfo, ypos = 70, xpos = 20, textBold=True, textSize = 20)
 
         self.buttonQuit = ui.actionButton(text="Quit", xpos=150, ypos=65, action=quitClicked, textBold=True, xMargin=60, textSize=32, outline=2, yMargin=2)
         self.buttonRegister = ui.actionButton(text="Register", xpos=window.WIDTH/2, ypos=window.HEIGHT/2-85, action=registerClicked, textBold=True, width=160, textSize=32, outline=2)
@@ -246,7 +245,7 @@ class UIElements():
 
         self.buttonConfirmExit = ui.actionButton(text="Exit without saving", xpos = 10, ypos = 75, 
                                             action=simulationExitConfirmed, textBold=True, 
-                                            textSize=20, outline=2, yMargin=3, 
+                                            textSize=20, outline=2, yMargin=3,  
                                             window = self.windowSimulationExit, xAlign = "left")
 
         self.buttonCancelExit = ui.actionButton(text="Cancel", xpos = self.windowSimulationExit.width - 10, 
@@ -558,6 +557,8 @@ def createSystemClicked():
     
         #then we update the database with the new objectData
         db.updateObjectsDatabase(data.objectData)
+    else:
+        data.simDate = datetime.datetime.today()
     data.objectCount = 1
     data.systemSize = 1000000000000
     simulationSetup()
