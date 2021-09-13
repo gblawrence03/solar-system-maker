@@ -631,7 +631,11 @@ class slider(element):
     
     def setValue(self, value):
         self.value = value
-        self.buttonXpos = self.xpos + self.value / (self.rightValue - self.leftValue) * self.width
+        if self.value < self.leftValue:
+            self.value = self.leftValue
+        if self.value > self.rightValue:
+            self.value = self.rightValue
+        self.buttonXpos = self.xpos - self.leftValue + self.value * (self.width - self.btnWidth) / (self.rightValue - self.leftValue)
 
     def detectClick(self, event):
         btnRect = self.drawButtonSurface.get_rect()

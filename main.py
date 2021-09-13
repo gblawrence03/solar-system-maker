@@ -791,6 +791,13 @@ def updatePlanetInfo():
 def sliderZoomMoved():
     #set system size logarithmically
     data.systemSize = 10**10 * 10**(4*(1-gui.sliderZoom.getValue())) 
+    systemZoom()
+
+def mouseWheelZoom(value):
+    gui.sliderZoom.setValue(gui.sliderZoom.getValue() + value)
+    sliderZoomMoved()
+
+def systemZoom():
     data.screenConversion = data.systemSize / window.WIDTH  # calculates the scale multiplier
     data.screenOffsetX = data.systemSize / 2
     data.screenOffsetY = (data.systemSize / 2) * (window.HEIGHT / window.WIDTH)
@@ -950,6 +957,10 @@ while True:
                     else:
                         createNewPlanetCustom()
                         gui.labelObjectVelocity.hide()
+            if event.button == 4:
+                mouseWheelZoom(0.02)
+            if event.button == 5:
+                mouseWheelZoom(-0.02)
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
@@ -990,7 +1001,7 @@ while True:
     #if a frame's period of time has passed, we draw everything + update display
     if timeSinceLastFrame > frame_every_ms:
         SCREEN.fill((0, 0, 0)) #fill the screen black
-
+        print(data.systemSize)
         #draw all the objects if we are in the simulation
         if data.simulation:
             for element in listener.objectListeners:
