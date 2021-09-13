@@ -13,7 +13,7 @@ import os
 
 import math
 
-VERSION = "v1.0.3 Alpha"
+VERSION = "v1.0.4 Alpha"
 
 class data():
     userID = 0
@@ -984,6 +984,8 @@ while True:
             window.WIDTH = event.w
             window.HEIGHT = event.h
             gui.reloadUI()
+            data.tickClock.tick()
+            data.timeSinceLastTick = 0
         
     #if a frame's period of time has passed, we draw everything + update display
     if timeSinceLastFrame > frame_every_ms:
