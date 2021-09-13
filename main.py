@@ -44,6 +44,7 @@ class data():
     timeSinceLastTick = 0
     ghost_planet = None
     simDate = None
+    paused = False
 
 class ghostPlanet():
     def __init__(self, radius, colour):
@@ -175,7 +176,7 @@ class UIElements():
                             lineColour=(166, 166, 166), btnColour=(91, 155, 213), height=30, btnWidth=8, width = 200, drawPriority="High")
 
         self.labelSimulationTime = ui.multiLinelabel(xpos = 800, xAlign = "centre", yAlign = "centre", textBold=False, ypos = window.HEIGHT - 40, textSize = 22, maxWidth = 300, drawPriority = "High")
-        self.labelSimulationSpeed = ui.multiLinelabel(xpos = 200, xAlign = "centre", textBold=False, ypos = self.sliderSimulationSpeed.ypos - 50, textSize = 22, maxWidth = 300, drawPriority="High")
+        self.labelSimulationSpeed = ui.multiLinelabel(xpos = 200, xAlign = "centre", textBold=False, ypos = self.sliderSimulationSpeed.ypos - 50, textSize = 22, maxWidth = 500, drawPriority = "High")
         self.labelZoom = ui.multiLinelabel(xpos = self.sliderZoom.xpos + self.sliderZoom.width / 2, xAlign = "centre", textBold=False, ypos = self.sliderZoom.ypos - 30, textSize = 22, maxWidth = 300, text = "Zoom", drawPriority="High")
 
         self.sliderPlanetRed = ui.slider(xpos = 20, ypos = 170, leftValue=0, rightValue=255, action=planetColourChanged, defaultValue=0.5, 
@@ -814,7 +815,10 @@ def planetColourChanged():
 
 #update the planet labels' names and coordinates.
 def updateLabels():
-    gui.labelSimulationSpeed.setText("Simulation rate:\n" + getSimSpeedString(data.simulationSpeed))
+    if data.paused:
+        gui.labelSimulationSpeed.setText("Simulation rate: (PAUSED)\n" + getSimSpeedString(data.simulationSpeed))
+    else:
+        gui.labelSimulationSpeed.setText("Simulation rate:\n" + getSimSpeedString(data.simulationSpeed))
     gui.labelSimulationTime.setText("Date / Time:\n" + data.simDate.strftime("%d/%m/%Y, %H:%M:%S"))
     #update the planet labels
     for i in range(0, len(data.planetLabels)):
@@ -927,8 +931,6 @@ ob.init(SCREEN, listener.objectListeners, onObjectClicked)
 
 gui = UIElements()
 
-paused = False
-
 frameClock = pygame.time.Clock()
 data.tickClock = pygame.time.Clock()
 
@@ -983,6 +985,8 @@ while True:
                         updatePlanetInfo()
                     except:
                         pass
+            if event.key == pygame.K_p:
+                data.paused = not data.paused
             keys = pygame.key.get_pressed()
             if keys[pygame.K_LSHIFT] and keys[pygame.K_ESCAPE]:
                 window.toggleFullscreen()
@@ -1001,7 +1005,6 @@ while True:
     #if a frame's period of time has passed, we draw everything + update display
     if timeSinceLastFrame > frame_every_ms:
         SCREEN.fill((0, 0, 0)) #fill the screen black
-        print(data.systemSize)
         #draw all the objects if we are in the simulation
         if data.simulation:
             for element in listener.objectListeners:
@@ -1023,7 +1026,7 @@ while True:
         timeSinceLastFrame = timeSinceLastFrame - frame_every_ms
 
     #if we are in the simulation we update all the systemObjects
-    if data.simulation:
+    if data.simulation and not data.paused:
         for element in listener.objectListeners:
             element.tick(data.timeSinceLastTick * data.simulationSpeed)
         data.simDate = data.simDate + datetime.timedelta(milliseconds=data.timeSinceLastTick * data.simulationSpeed)
